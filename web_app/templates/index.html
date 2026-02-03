@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Meal Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Smart Meal Tracker</h1>
+
+    <form method="POST">
+        <label for="food_select">Select Food:</label>
+        <select name="food_select">
+            {% for food in food_options %}
+            <option value="{{ food }}">{{ food }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Add Meal</button>
+    </form>
+
+    {% if food_name %}
+    <h2>Meal Details</h2>
+    <p><strong>Food:</strong> {{ food_name }}</p>
+    <p><strong>Weight:</strong> {{ weight }} g</p>
+    <p><strong>Calories:</strong> {{ nutrition.calories }}</p>
+    <p><strong>Protein:</strong> {{ nutrition.protein }} g</p>
+    <p><strong>Carbs:</strong> {{ nutrition.carbs }} g</p>
+    <p><strong>Fat:</strong> {{ nutrition.fat }} g</p>
+    <p><strong>Health Score:</strong> {{ score }}</p>
+    <p><strong>Daily Total Calories:</strong> {{ daily_total }}</p>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Virtual environments
+.venv/
+venv/
+tf_env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS / IDE
+.idea/
+.vscode/
+
+# Images & generated files
+*.jpg
+*.png
+latest_meal.jpg
