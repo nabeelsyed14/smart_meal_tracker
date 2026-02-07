@@ -1,12 +1,126 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     margin: 40px;
+    max-width: 560px;
+    color: #1a1a1a;
 }
 
 h1, h2 {
     color: #2c3e50;
 }
 
+.subtitle {
+    color: #666;
+    margin-top: -0.5em;
+}
+
+.card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.25em;
+    margin: 1em 0;
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.1em;
+}
+
+.sensor-status {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 6px;
+    padding: 0.75em 1em;
+    margin-bottom: 1em;
+}
+
+.sensor-status small {
+    display: block;
+    color: #555;
+    margin-top: 0.25em;
+}
+
 form {
-    margin-bottom: 20px;
+    margin-bottom: 1em;
+}
+
+label {
+    display: block;
+    margin-top: 0.75em;
+    font-weight: 500;
+}
+
+label small {
+    font-weight: normal;
+    color: #666;
+}
+
+select, input[type="number"], input[type="file"] {
+    margin-top: 0.25em;
+    padding: 0.5em;
+    width: 100%;
+    max-width: 280px;
+    box-sizing: border-box;
+}
+
+button {
+    margin-top: 1em;
+    padding: 0.6em 1.2em;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.message {
+    color: #b91c1c;
+    margin: 0.5em 0;
+}
+
+.result {
+    border-left: 4px solid #2563eb;
+}
+
+.daily-total {
+    font-size: 1.5em;
+}
+
+.recent-meals {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recent-meals li {
+    padding: 0.35em 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recent-meals li:last-child {
+    border-bottom: none;
+}
+
+footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #eee;
+    font-size: 0.85em;
+    color: #666;
+}
+
+footer code {
+    background: #eee;
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 1em 0;
 }

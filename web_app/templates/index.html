@@ -1,32 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Meal Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>Smart Meal Tracker</h1>
+    <p class="subtitle">Web + IoT: connect your scale and log meals manually or by photo.</p>
 
-    <form method="POST">
-        <label for="food_select">Select Food:</label>
-        <select name="food_select">
-            {% for food in food_options %}
-            <option value="{{ food }}">{{ food }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Add Meal</button>
-    </form>
+    {% if last_sensor_weight is not none %}
+    <div class="sensor-status">
+        <strong>Scale connected:</strong> Last weight <span id="sensor-weight">{{ last_sensor_weight }}</span> g
+        <small>(use "Add Meal" without entering weight to use this)</small>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h2>Add Meal</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <label for="food_select">Food:</label>
+            <select name="food_select" id="food_select">
+                <option value="">-- Select food --</option>
+                {% for food in food_options %}
+                <option value="{{ food }}">{{ food.replace('_', ' ').title() }}</option>
+                {% endfor %}
+            </select>
+            <label for="weight">Weight (g) <small>optional if scale sent weight</small>:</label>
+            <input type="number" name="weight" id="weight" min="1" step="1" placeholder="{{ last_sensor_weight or 'e.g. 150' }}">
+            <button type="submit">Add Meal</button>
+        </form>
+
+        <hr>
+        <p>Or upload a photo to detect food:</p>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="food_image" accept="image/*" capture="environment">
+            <button type="submit">Detect & Add</button>
+        </form>
+    </div>
+
+    {% if message %}
+    <p class="message">{{ message }}</p>
+    {% endif %}
 
     {% if food_name %}
-    <h2>Meal Details</h2>
-    <p><strong>Food:</strong> {{ food_name }}</p>
-    <p><strong>Weight:</strong> {{ weight }} g</p>
-    <p><strong>Calories:</strong> {{ nutrition.calories }}</p>
-    <p><strong>Protein:</strong> {{ nutrition.protein }} g</p>
-    <p><strong>Carbs:</strong> {{ nutrition.carbs }} g</p>
-    <p><strong>Fat:</strong> {{ nutrition.fat }} g</p>
-    <p><strong>Health Score:</strong> {{ score }}</p>
-    <p><strong>Daily Total Calories:</strong> {{ daily_total }}</p>
+    <div class="card result">
+        <h2>Last added</h2>
+        <p><strong>Food:</strong> {{ food_name }}</p>
+        <p><strong>Weight:</strong> {{ weight }} g</p>
+        <p><strong>Calories:</strong> {{ nutrition.calories }}</p>
+        <p><strong>Protein:</strong> {{ nutrition.protein }} g</p>
+        <p><strong>Carbs:</strong> {{ nutrition.carbs }} g</p>
+        <p><strong>Fat:</strong> {{ nutrition.fat }} g</p>
+        <p><strong>Health Score:</strong> {{ score }}</p>
+    </div>
     {% endif %}
+
+    <div class="card">
+        <h2>Daily total</h2>
+        <p class="daily-total"><strong>{{ daily_total }}</strong> kcal</p>
+    </div>
+
+    {% if recent_meals %}
+    <div class="card">
+        <h2>Recent meals</h2>
+        <ul class="recent-meals">
+            {% for m in recent_meals %}
+            <li>{{ m.food }} — {{ m.weight_g }} g · {{ m.nutrition.calories }} kcal (score {{ m.score }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <footer>
+        <p>API for IoT & Android: <code>POST /api/sensor/weight</code>, <code>POST /api/meal</code>, <code>GET /api/daily</code>, <code>GET /api/foods</code></p>
+    </footer>
 </body>
 </html>
