@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Smart Meal</string>
+    <string name="server_url_hint">http://192.168.1.10:5000</string>
+    <string name="add_meal">Add Meal</string>
+    <string name="refresh">Refresh</string>
+    <string name="daily_total">Daily total: %1$s kcal</string>
+    <string name="weight_hint">Weight (g)</string>
+</resources>
