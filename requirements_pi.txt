@@ -1,0 +1,7 @@
+# Smart Meal on Raspberry Pi – lighter than full TensorFlow
+-r requirements.txt
+# Optional: TensorFlow Lite for fast local inference (put food_model.tflite in ai_model/)
+# tflite-runtime>=2.14.0
+# Load cell (HX711) – install on Pi for scripts/pi_load_cell.py
+# RPi.GPIO
+# hx711   # or: hx711-rpi-py

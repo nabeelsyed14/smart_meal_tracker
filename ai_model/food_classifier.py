@@ -26,6 +26,17 @@ except ImportError:
     pass
 
 
+# ImageNet class index -> our nutrition DB key (for TFLite with ImageNet model)
+IMAGENET_TO_FOOD = {
+    949: "orange",
+    952: "banana",
+    967: "apple",      # Granny_Smith
+    927: "pizza",
+    933: "french_fries",
+    964: "salad",      # head cabbage
+}
+
+
 def _classify_tflite(img_path):
     """Run TFLite model (e.g. on Pi). Expects model with ImageNet-style input 224x224, float."""
     if not os.path.isfile(TFLITE_MODEL_PATH):
@@ -34,11 +45,10 @@ def _classify_tflite(img_path):
     interp.allocate_tensors()
     input_idx = interp.get_input_details()[0]["index"]
     input_shape = interp.get_input_details()[0]["shape"]
-    # Load and preprocess image to input_shape (e.g. [1, 224, 224, 3])
     try:
         from PIL import Image
-        img = Image.open(img_path).resize((input_shape[1], input_shape[2]))
         import numpy as np
+        img = Image.open(img_path).resize((input_shape[1], input_shape[2]))
         x = np.array(img, dtype=np.float32) / 127.5 - 1.0
         if len(x.shape) == 2:
             x = np.stack([x] * 3, axis=-1)
@@ -46,10 +56,11 @@ def _classify_tflite(img_path):
         interp.set_tensor(input_idx, x)
         interp.invoke()
         out = interp.get_tensor(interp.get_output_details()[0]["index"])
-        # Simplified: return top class as (b'', 'label', prob). For full labels use a label file.
         idx = int(out[0].argmax())
         prob = float(out[0].max())
-        return [("tflite", f"class_{idx}", prob)]
+        # Map ImageNet index to food label so get_food_label + DB lookup can work
+        label = IMAGENET_TO_FOOD.get(idx, f"class_{idx}")
+        return [("tflite", label, prob)]
     except Exception:
         return None
 
