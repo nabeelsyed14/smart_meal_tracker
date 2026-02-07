@@ -9,6 +9,8 @@ from health_score.score_logic import compute_health_score
 
 app = Flask(__name__)
 
+from analyze_image import register_analyze_image
+register_analyze_image(app)
 # Load nutrition database
 db = load_nutrition_db()
 
