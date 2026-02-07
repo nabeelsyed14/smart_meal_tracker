@@ -2,24 +2,29 @@
 
 This document describes how sensors and the Android app communicate with the web backend.
 
+**If the backend runs entirely on a Raspberry Pi** (Flask + AI + load cell + camera), see **[BACKEND_ON_PI.md](BACKEND_ON_PI.md)** for setup and how web/Android connect to the Pi.
+
 ## Overview
 
 ```
-┌─────────────────┐     HTTP/HTTPS      ┌──────────────────────┐
-│  IoT scale /    │ ──────────────────► │  Flask web app      │
-│  Raspberry Pi   │  POST /api/sensor/  │  (host 0.0.0.0:5000) │
-│  (weight)       │       weight        │                      │
-└─────────────────┘                     │  - Web UI            │
-                                        │  - REST API          │
-┌─────────────────┐     HTTP/HTTPS      │  - Daily totals      │
-│  Android app    │ ◄─────────────────► │  - Recent meals      │
-│  (phone/tablet) │  GET/POST /api/*    └──────────────────────┘
+┌─────────────────┐     POST /api/sensor/weight    ┌──────────────────────┐
+│  IoT scale /    │ ─────────────────────────────► │  Flask web app      │
+│  Raspberry Pi   │                                │  (host 0.0.0.0:5000) │
+└─────────────────┘     POST /api/meal (image)     │  - Web UI            │
+┌─────────────────┐     ◄─────────────────────────  │  - REST API          │
+│  Pi camera      │  (food detection = same as     │  - Daily totals      │
+│  (photo)        │   web / Android)               │  - Recent meals      │
+└─────────────────┘                                └──────────────────────┘
+┌─────────────────┐     GET/POST /api/*             
+│  Android app    │ ◄────────────────────────────► 
+│  (phone/tablet) │                                 
 └─────────────────┘
 ```
 
-- **Web UI**: Browser on same network (e.g. `http://<server-ip>:5000`) for manual and photo-based logging.
-- **IoT device**: Scale or Pi sends weight to `POST /api/sensor/weight`. The web UI uses this as default weight when adding a meal.
-- **Android app**: Uses the same REST API to add meals (manual or photo), get daily summary, and list foods.
+- **Web UI**: Browser on same network for manual and photo-based logging.
+- **IoT – weight**: Scale or Pi sends weight to `POST /api/sensor/weight`. The server uses this as the default weight when a meal is added without weight (web, Android, or Pi).
+- **IoT – Pi camera**: Images from the Pi camera are sent to the **same** `POST /api/meal` endpoint (multipart with `food_image` or `image`). They are processed exactly like web or Android uploads: same food classifier, same nutrition/health logic. **Pi camera is a first-class image source**—no separate path; it uses the default pipeline.
+- **Android app**: Same REST API to add meals (manual or photo), get daily summary, and list foods.
 
 ## REST API
 
@@ -62,10 +67,12 @@ Response: `{ "weight_g": 250 }` or `{ "weight_g": null }`.
 
 If `weight_g` is omitted and a sensor weight was sent earlier, the server uses that value.
 
-**Option B – Multipart (photo):**
+**Option B – Multipart (photo – web, Android, or Pi camera):**
 
-- `food_image` or `image`: image file.
-- Optional form field or JSON: `weight_g`. If missing, last sensor weight or 100 g is used.
+- `food_image` or `image`: image file (from upload, phone camera, or **Pi camera**).
+- Optional: `weight_g`. If missing, last sensor weight (e.g. from scale) or 100 g is used.
+
+All image sources use the same pipeline; Pi camera images are not treated differently and become the default input when you send them from the Pi.
 
 Response (success): e.g.
 
@@ -116,6 +123,18 @@ requests.post(url, json={"weight_g": weight_grams})
 ```
 
 Replace `<SERVER_IP>` with the computer running the Flask app (e.g. `192.168.1.10`).
+
+## Pi camera: send image for food detection
+
+Images from the Pi camera use the **same** `POST /api/meal` endpoint as the web and Android. The server runs the same food classifier and nutrition logic—Pi camera is just another client.
+
+Typical flow:
+
+1. Pi captures a photo (e.g. with `picamera2` or `libcamera`).
+2. Pi sends `POST /api/meal` with the image as multipart `food_image` or `image`.
+3. Optionally send weight in the same request (or rely on a previous `POST /api/sensor/weight` from the scale).
+
+Example script: `scripts/pi_camera_meal.py` (capture + POST). The response contains detected food, nutrition, and updated daily total—same as when uploading from the website.
 
 ## Example: Android calling the API
 

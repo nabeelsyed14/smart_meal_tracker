@@ -151,10 +151,13 @@ def api_meal():
     nutrition = None
     score = None
 
-    # JSON body: food_id + weight_g
+    # JSON body or form: food_id + weight_g
     data = request.get_json(silent=True) or {}
     food_id = (data.get("food_id") or data.get("food") or "").strip()
     weight_g = data.get("weight_g") or data.get("weight")
+    # Multipart (e.g. Pi camera) can send weight_g as form field
+    if weight_g is None and request.form:
+        weight_g = request.form.get("weight_g") or request.form.get("weight")
     if weight_g is not None:
         try:
             weight_g = float(weight_g)

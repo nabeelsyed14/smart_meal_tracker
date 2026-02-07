@@ -4,77 +4,143 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Meal Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Smart Meal Tracker</h1>
-    <p class="subtitle">Web + IoT: connect your scale and log meals manually or by photo.</p>
+    <div class="app">
+        <header class="header">
+            <h1>Smart Meal Tracker</h1>
+            <p class="subtitle">Connect your scale and Pi camera · Log manually or by photo</p>
+        </header>
 
-    {% if last_sensor_weight is not none %}
-    <div class="sensor-status">
-        <strong>Scale connected:</strong> Last weight <span id="sensor-weight">{{ last_sensor_weight }}</span> g
-        <small>(use "Add Meal" without entering weight to use this)</small>
-    </div>
-    {% endif %}
+        {% if last_sensor_weight is not none %}
+        <div class="sensor-status">
+            <strong>Scale connected</strong> — Last weight <span id="sensor-weight">{{ last_sensor_weight }}</span> g
+            <small>Leave weight empty when adding a meal to use this value</small>
+        </div>
+        {% endif %}
 
-    <div class="card">
-        <h2>Add Meal</h2>
-        <form method="POST" enctype="multipart/form-data">
-            <label for="food_select">Food:</label>
-            <select name="food_select" id="food_select">
-                <option value="">-- Select food --</option>
-                {% for food in food_options %}
-                <option value="{{ food }}">{{ food.replace('_', ' ').title() }}</option>
+        <div class="card">
+            <h2>Add meal</h2>
+            <form method="POST" enctype="multipart/form-data" id="form-manual">
+                <div class="form-group">
+                    <label for="food_select">Food</label>
+                    <select name="food_select" id="food_select">
+                        <option value="">— Select food —</option>
+                        {% for food in food_options %}
+                        <option value="{{ food }}">{{ food.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="weight">Weight (g) <small>optional if scale sent weight</small></label>
+                    <input type="number" name="weight" id="weight" min="1" step="1" placeholder="{{ last_sensor_weight or 'e.g. 150' }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Add meal</button>
+            </form>
+
+            <div class="divider"></div>
+            <p class="divider-label">Or detect from photo</p>
+            <form method="POST" enctype="multipart/form-data" id="form-photo">
+                <div class="file-wrap">
+                    <input type="file" name="food_image" accept="image/*" capture="environment" id="food_image">
+                    <button type="submit" class="btn btn-secondary">Detect & add</button>
+                </div>
+            </form>
+        </div>
+
+        {% if message %}
+        <p class="message" id="flash-message">{{ message }}</p>
+        {% endif %}
+
+        <div class="daily-block">
+            <p class="daily-total" id="daily-total"><strong id="daily-value">{{ daily_total }}</strong> <span>kcal today</span></p>
+            <div class="refresh-btn-wrap">
+                <button type="button" class="btn btn-secondary" id="refresh-daily" aria-label="Refresh total">Refresh</button>
+            </div>
+        </div>
+
+        {% if food_name %}
+        <div class="card result">
+            <h2>Last added</h2>
+            <div class="result-grid">
+                <span><strong>Food</strong></span><span>{{ food_name }}</span>
+                <span><strong>Weight</strong></span><span>{{ weight }} g</span>
+                <span><strong>Calories</strong></span><span>{{ nutrition.calories }}</span>
+                <span><strong>Protein</strong></span><span>{{ nutrition.protein }} g</span>
+                <span><strong>Carbs</strong></span><span>{{ nutrition.carbs }} g</span>
+                <span><strong>Fat</strong></span><span>{{ nutrition.fat }} g</span>
+                <span><strong>Health score</strong></span><span>{{ score }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if recent_meals %}
+        <div class="card">
+            <h2>Recent meals</h2>
+            <ul class="recent-meals" id="recent-meals">
+                {% for m in recent_meals %}
+                <li><span>{{ m.food }} · {{ m.weight_g }} g</span><span class="kcal">{{ m.nutrition.calories }} kcal</span></li>
                 {% endfor %}
-            </select>
-            <label for="weight">Weight (g) <small>optional if scale sent weight</small>:</label>
-            <input type="number" name="weight" id="weight" min="1" step="1" placeholder="{{ last_sensor_weight or 'e.g. 150' }}">
-            <button type="submit">Add Meal</button>
-        </form>
+            </ul>
+        </div>
+        {% endif %}
 
-        <hr>
-        <p>Or upload a photo to detect food:</p>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="food_image" accept="image/*" capture="environment">
-            <button type="submit">Detect & Add</button>
-        </form>
+        <footer>
+            <p>API: <code>POST /api/sensor/weight</code> · <code>POST /api/meal</code> · <code>GET /api/daily</code></p>
+        </footer>
     </div>
 
-    {% if message %}
-    <p class="message">{{ message }}</p>
-    {% endif %}
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    {% if food_name %}
-    <div class="card result">
-        <h2>Last added</h2>
-        <p><strong>Food:</strong> {{ food_name }}</p>
-        <p><strong>Weight:</strong> {{ weight }} g</p>
-        <p><strong>Calories:</strong> {{ nutrition.calories }}</p>
-        <p><strong>Protein:</strong> {{ nutrition.protein }} g</p>
-        <p><strong>Carbs:</strong> {{ nutrition.carbs }} g</p>
-        <p><strong>Fat:</strong> {{ nutrition.fat }} g</p>
-        <p><strong>Health Score:</strong> {{ score }}</p>
-    </div>
-    {% endif %}
+    <script>
+(function () {
+    var baseUrl = window.location.origin;
 
-    <div class="card">
-        <h2>Daily total</h2>
-        <p class="daily-total"><strong>{{ daily_total }}</strong> kcal</p>
-    </div>
+    function showToast(msg) {
+        var el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(function () { el.classList.remove('show'); }, 2800);
+    }
 
-    {% if recent_meals %}
-    <div class="card">
-        <h2>Recent meals</h2>
-        <ul class="recent-meals">
-            {% for m in recent_meals %}
-            <li>{{ m.food }} — {{ m.weight_g }} g · {{ m.nutrition.calories }} kcal (score {{ m.score }})</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
+    function updateDaily() {
+        fetch(baseUrl + '/api/daily')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var el = document.getElementById('daily-value');
+                if (el) el.textContent = data.daily_total_calories != null ? data.daily_total_calories : '—';
+            })
+            .catch(function () {});
+    }
 
-    <footer>
-        <p>API for IoT & Android: <code>POST /api/sensor/weight</code>, <code>POST /api/meal</code>, <code>GET /api/daily</code>, <code>GET /api/foods</code></p>
-    </footer>
+    document.getElementById('refresh-daily')?.addEventListener('click', function () {
+        updateDaily();
+        showToast('Updated');
+    });
+
+    var formManual = document.getElementById('form-manual');
+    var formPhoto = document.getElementById('form-photo');
+    if (formManual) {
+        formManual.addEventListener('submit', function () {
+            setTimeout(updateDaily, 500);
+        });
+    }
+    if (formPhoto) {
+        formPhoto.addEventListener('submit', function () {
+            setTimeout(updateDaily, 1500);
+        });
+    }
+
+    // Optional: refresh daily total every 60s when tab is visible
+    setInterval(function () {
+        if (document.visibilityState === 'visible') updateDaily();
+    }, 60000);
+})();
+    </script>
 </body>
 </html>
